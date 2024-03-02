@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, shrink-to-fit=no"
+    />
+    <title>Kentucky Master Logger Map</title>
+    <!-- Bootstrap CSS -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css"
+      integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65"
+      crossorigin="anonymous"
+    />
+    <!-- Leaflet CSS -->
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"
+      integrity="sha256-kLaT2GOSpHechhsozzB+flnD+zUyjE2LlfWPgU04xyI="
+      crossorigin=""
+    />
+    <!-- Fonts -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,800;1,800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        background: #20282e;
+        font-family: "Open Sans", sans-serif;
+        font-weight: 400;
+        font-size: 100%;
+      }
+
+      footer {
+        position: fixed;
+        bottom: 0;
+        width: 100%;
+        height: 3rem;
+      }
+
+      h1 {
+        font-weight: 800;
+      }
+
+      ul::marker {
+        color: black;
+      }
+
+      p {
+        line-height: 1.7rem;
+      }
+
+      #map {
+        /* height is set in JS */
+        background: #2d2f31;
+      }
+
+      .legend {
+        font-family: Lato, sans-serif;
+        padding: 6px 8px;
+        font-size: 1em;
+        background: rgba(75, 75, 75, 0.8);
+        color: whitesmoke;
+        box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+        border-radius: 5px;
+        width: 160px;
+      }
+
+      .legend h3 {
+        font-size: 1.1em;
+        font-weight: bold;
+        line-height: 1em;
+        color: whitesmoke;
+        margin: 0;
+      }
+
+      .legend h3 span {
+        font-size: 1.3em;
+        margin: 0 20px 0 0;
+      }
+
+      .legend ul {
+        list-style-type: none;
+        padding: 0;
+        margin: 12px 4px 0;
+      }
+
+      .legend li {
+        list-style-type: none;
+        height: 22px;
+      }
+
+      .legend span {
+        width: 30px;
+        height: 20px;
+        float: left;
+        margin-right: 10px;
+      }
+
+      .leaflet-bar a {
+        /* Override the default style for Leaflet's zoom  */
+        background: rgba(100, 100, 100, 0.9);
+        color: rgba(244, 244, 244, 0.8);
+      }
+
+      a:hover {
+        color: rgb(130, 131, 132);
+        text-decoration: none;
+      }
+
+      /* Custom Tool tips */
+      .leaflet-tooltip-own {
+        background: rgba(58, 58, 58, 0.955);
+        color: rgb(244, 244, 244);
+        border: none;
+        font-size: 1rem;
+        border-radius: 5px;
+        padding: 10px;
+        font-family: "Open Sans", sans-serif;
+        box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+      }
+
+      .leaflet-tooltip-left:before {
+        right: 0;
+        margin-right: -12px;
+        border-left-color: rgba(0, 0, 0, 0.4);
+      }
+
+      .leaflet-tooltip-right:before {
+        left: 0;
+        margin-left: -12px;
+        border-right-color: rgba(0, 0, 0, 0.4);
+      }
+
+      /* Small devices (landscape phones, 576px and up) */
+      @media (min-width: 576px) {
+      }
+
+      /* Medium devices (tablets, 768px and up) */
+      @media (min-width: 768px) {
+      }
+
+      /* Large devices (desktops, 992px and up) */
+      @media (min-width: 992px) {
+      }
+
+      /* Extra large devices (large desktops, 1200px and up) */
+      @media (min-width: 1200px) {
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container-fluid">
+      <header class="row bg-dark text-white p-2">
+        <div class="col-8">
+          <h1>Active Kentucky Master Loggers (2024)</h1>
+        </div>
+        <div class="col-4 align-self-center">
+          <p class="d-flex justify-content-end my-auto">
+            <a
+              class="btn btn-outline-light text-light"
+              data-bs-toggle="offcanvas"
+              href="#offcanvasExample"
+              role="button"
+              aria-controls="offcanvasExample"
+            >
+              Map Info
+            </a>
+          </p>
+        </div>
+      </header>
+
+      <section class="row">
+        <div class="p-0">
+          <div id="map"></div>
+        </div>
+        <form id="test" action="/kmltable.php" method="post">
+          <input type="hidden" name="valueForTable" id="valueForTable">
+
+        </form>
+      </section>
+
+      <footer class="row bg-dark text-white p-2">
+        <p class="text-center"></p>
+      </footer>
+    </div>
+
+    <div
+      class="offcanvas offcanvas-start bg-dark text-white"
+      tabindex="-1"
+      id="offcanvasExample"
+      aria-labelledby="offcanvasExampleLabel"
+    >
+      <div class="offcanvas-header">
+        <h5 class="offcanvas-title" id="offcanvasExampleLabel">Map Info</h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="offcanvas"
+          aria-label="Close"
+        ></button>
+      </div>
+      <div class="offcanvas-body">
+        <h3 class="py-2">Overview Kentucky Master Logger</h3>
+        <p>
+          The Kentucky Master Logger Program is designed to enhance the logger’s
+          ability to operate efficiently within the framework of constantly
+          changing environmental and safety regulations.
+        </p>
+        <hr />
+        <ul class="list-unstyled">
+          <li>
+            Authored by
+            <a href="https://forestry.ca.uky.edu/michael-ammerman"
+              >Michael Ammerman</a
+            ><br>
+          </li>
+          <br><li>KML Partners:<br><a href="https://forestry.ca.uky.edu/extension-home">University of Kentucky - Forestry Extension</a><br>
+          <a href="https://www.kfia.org/Home">Kentucky Forest Industries Association</a><br>
+            <a href="https://eec.ky.gov/Natural-Resources/Forestry/Pages/default.aspx">Kentucky Division of Forestry</a></li><br>
+          <li>
+            Data Source:<br>
+            <a href="https://www.census.gov/">U.S. Census Bureau</a><br>
+            <a href="https://masterlogger.ca.uky.edu/search">Kentucky Master Logger Database</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- legend is outside of container-fluid and will be dynamically added to map -->
+    <div class="legend d-flex flex-column px-3 py-2" id="legend"></div>
+
+    <!-- ui is outside of container-fluid and will be dynamically added to map -->
+    <!---<div class="form-group me-3 mt-3" id="dropdown-ui">
+    <select class="form-control bg-dark text-white" id="selector">
+      <option value="OWNED_MORT" selected>owned with mortgage</option>
+      <option value="OWNED_FREE">owned free and clear</option>
+      <option value="RENTER">rented</option>
+    </select>
+  </div> -->
+
+    <!-- Add Bootstrap -->
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-kenU1KFdBIe4zVF0s0G1M5b4hcpxyD9F7jL+jjXkk+Q2h455rYXK/7HAuoJl+0I4"
+      crossorigin="anonymous"
+    ></script>
+    <!-- then Leaflet JS -->
+    <script
+      src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"
+      integrity="sha256-WBkoXOwTeyKclOHuWtc+i2uENFpDZ9YPdf5Hf+D7ewM="
+      crossorigin=""
+    ></script>
+    <!-- then Simple Statistics -->
+    <script src="https://unpkg.com/simple-statistics@7.8.3/dist/simple-statistics.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.7.2/proj4.js"></script>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.1/papaparse.min.js"
+      integrity="sha512-EbdJQSugx0nVWrtyK3JdQQ/03mS3Q1UiAhRtErbwl1YL/+e2hZdlIcSURxxh7WXHTzn83sjlh2rysACoJGfb6g=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/chroma-js/2.1.2/chroma.min.js"
+      integrity="sha512-8TVPS0EFkkmtT6yPb5K4csnSt3tjbKRrs0F8gvTNKv2OxOcwDO7+Klkz86gMVrzfqtZos5N2a+k+r9D+hlccmQ=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+    <script>
+      // Add footer date
+      setDate();
+
+      // set global variables for header, map container, and footer
+      const header = document.querySelector("header");
+      const mapContainer = document.querySelector("#map");
+      const footer = document.querySelector("footer");
+
+      // set map height to fill window
+      mapContainer.style.height =
+        window.innerHeight - header.offsetHeight - footer.offsetHeight + "px";
+
+      // initial Leaflet map options
+      const options = {
+        center: [38, -86],
+        zoom: 7,
+        zoomSnap: 0.5,
+        zoomControl: false,
+        attributionControl: false,
+      };
+
+      // create Leaflet map and apply options
+      const map = L.map("map", options);
+
+      setPanes = ["bottom", "middle", "top"];
+      setPanes.forEach((pane, i) => {
+        map.createPane(pane);
+        map.getPane(pane).style.zIndex = 401 + i;
+      });
+
+      // request a basemap tile layer and add to the map
+      const tiles = L.tileLayer(
+        "https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png",
+        {
+          attribution:
+            '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        }
+      ).addTo(map);
+
+      L.tileLayer(
+        "https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png",
+        {
+          pane: "top",
+        }
+      ).addTo(map);
+
+      // set global variables for map layer,
+      // mapped attribute, and normalizing attribute
+      // let attributeValue = document.getElementById("selector").value;
+      // let normValue = "OWNER";
+      // console.log(typeof(attributeValue));
+      // fetch data
+      fetch("data/kmlJoin.geojson")
+        // after it is returned...
+        .then(function (response) {
+          // Parse the JSON into a useable format, then return it
+          return response.json();
+        })
+        // The returned response is now data in a new then method
+        .then(function (counties) {
+          // This is the JSON from our response
+          console.log(counties);
+          processData(counties);
+        })
+
+        // If there is an error, log it to the console
+        .catch(function (error) {
+          console.log(error);
+        });
+
+      // Example of keeping your page fresh
+      function setDate() {
+        const date = new Date();
+        const year = date.getFullYear();
+        const month = date.toLocaleString("default", { month: "long" });
+        const footerText = document.querySelector("footer p");
+        footerText.innerHTML = `${month}, ${year} | Kentucky Master Loggers`;
+      }
+
+      function processData(counties) {
+        const rates = [];
+
+        // iterate through all counties
+        counties.features.forEach(function (county) {
+          if (Number(county.properties.Count) > 0) {
+            rates.push(Number(county.properties.Count));
+          }
+        });
+        console.log(rates.sort());
+
+        var breaks = chroma.limits(rates, "q", 5);
+
+        // create color generator function
+        var colorize = chroma
+          .scale(chroma.brewer.greens)
+          .classes(breaks)
+          .mode("lab");
+
+        drawMap(counties, colorize);
+        drawLegend(breaks, colorize);
+      }
+
+      function drawMap(data, colorize) {
+        // const counties = L.geoJson(data).addTo(map);
+        // create Leaflet data layer and add to map
+        const dataLayer = L.geoJson(data, {
+          // style counties with initial default path options
+          style: function (feature) {
+            return {
+              color: "#20282e",
+              weight: 2,
+              fillOpacity: 1,
+              fillColor: "#1f78b4",
+            };
+          },
+          // add hover/touch functionality to each feature layer
+          onEachFeature: function (feature, layer) {
+            // when mousing over a layer
+            layer.on("mouseover", function () {
+              // change the stroke color and bring that element to the front
+              layer
+                .setStyle({
+                  color: "#ff6e00",
+                })
+                .bringToFront();
+            });
+
+            // on mousing off layer
+            layer.on("mouseout", function () {
+              // reset the layer style to its original stroke color
+              layer.setStyle({
+                color: "#20282e",
+              });
+            });
+            layer.on("click", function () {
+              document.getElementById("valueForTable").value = feature.properties.NAME;
+              document.getElementById("test").submit();
+            });
+          },
+        }).addTo(map);
+
+        // fit the map's bounds and zoom level using the counties extent
+        map.fitBounds(dataLayer.getBounds(), {
+          padding: [18, 18], // add padding around counties
+          animation: false, // disable animating the zoom
+        });
+        // addUi(counties);
+        updateMap(dataLayer, colorize); // draw the map
+      }
+
+      function updateMap(dataLayer, colorize) {
+        dataLayer.eachLayer(function (layer) {
+          const props = layer.feature.properties;
+          layer.setStyle({
+            fillColor: colorize(props["Count"]),
+          });
+          var tooltip;
+          console.log(layer.feature.properties.Count);
+          if (
+            layer.feature.properties.Count === 0 ||
+            layer.feature.properties.Count === null
+          ) {
+            console.log(layer.feature.properties);
+            layer.setStyle({
+              fillColor: "grey",
+            });
+            tooltip = `<b>${props["NAME"]} County</b><br />
+          Number of KML's: 0`;
+          } else {
+            tooltip = `<b>${props["NAME"]} County</b><br />
+          Number of KML's: ${props["Count"]}<br>
+          Click to See List of Loggers`;
+          }
+          layer.bindTooltip(tooltip, {
+            sticky: true,
+          });
+        });
+      }
+
+      // Get class breaks in data
+      function getClassBreaks(counties) {
+        // create empty Array for storing values
+      }
+
+      // Get color of county
+      function getColor(d, breaks, check) {
+        // function accepts a single normalized data attribute value
+        // and uses a series of conditional statements to determine which
+        // which color value to return to return to the function caller
+
+        if (d <= 0 || check == null) {
+          return "purple";
+        } else if (d <= breaks[0][1]) {
+          return "#00204d";
+        } else if (d <= breaks[1][1]) {
+          return "#414d6b";
+        } else if (d <= breaks[2][1]) {
+          return "#7d7c78";
+        } else if (d <= breaks[3][1]) {
+          return "#beaf6f";
+        } else if (d <= breaks[4][1]) {
+          return "#ffea46";
+        }
+      }
+
+      // Add legend to map
+      function drawLegend(breaks, colorize) {
+        // check your console to verify the breaks array
+        // create a new Leaflet control object, and position it top left
+        const legendControl = L.control({ position: "topleft" });
+
+        // when the legend is added to the map
+        legendControl.onAdd = function () {
+          // select a div element with an id attribute of legend
+          const legend = L.DomUtil.get("legend");
+
+          // disable scroll and click/touch on map when on legend
+          L.DomEvent.disableScrollPropagation(legend);
+          L.DomEvent.disableClickPropagation(legend);
+
+          // return the selection to the method
+          return legend;
+        };
+        legendControl.addTo(map);
+        // add the empty legend div to the map
+        const legend = document.querySelector(".legend");
+        legend.innerHTML = "<h3>KML's per County</h3><ul>";
+
+        legend.innerHTML += `<li><span style="background:grey"></span> 0`;
+        // close legend unordered list
+        legend.innerHTML += "</ul>";
+
+        // loop through the break values
+        for (let i = 0; i < breaks.length - 1; i++) {
+          // determine color value
+          const color = colorize(breaks[i], breaks);
+
+          // create legend item
+          const classRange = `<li><span style="background:${color}"></span>
+        ${breaks[i].toLocaleString()} &mdash;
+        ${breaks[i + 1].toLocaleString()} </li>`;
+
+          // append to legend unordered list item
+          legend.innerHTML += classRange;
+        }
+        // close legend unordered list
+        legend.innerHTML += "</ul>";
+      }
+
+      function updateLegend(breaks) {}
+
+      function addUi(counties) {
+        // create the slider control
+        var selectControl = L.control({ position: "topright" });
+
+        // when control is added
+        selectControl.onAdd = function () {
+          // get the element with id attribute of ui-controls
+          return L.DomUtil.get("dropdown-ui");
+        };
+        // add the control to the map
+        selectControl.addTo(map);
+      }
+
+      function drawAnotherLayer(data) {}
+      console.log(null / null);
+    </script>
+  </body>
+</html>
